@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 import random
@@ -40,6 +41,74 @@ symbols = ["0","1","2","3","4","5","6","7","8","9","-"]
 
 #---------------------------------------------------------
 
+def show_ids():
+	text_id = ''
+	links = open("items_id", 'r')
+	for i in links:
+		id = i
+		if i[len(i) -1: ]== "\n":
+			id = i[:-1]
+		text_id = text_id + id + ', '
+	links.close()
+	text_id = text_id[:-1]
+	os.system('clear')
+	print('items\' id: ' + text_id)
+	return
+	
+#---------------------------------------------------------
+
+def check_inf():
+	os.system('clear')
+	try:
+		vk_session = vk_api.VkApi(login, password)
+		vk_session.auth()
+		vk = vk_session.get_api()			
+	except:
+		print('failed to log in. please check settings or your connection')
+		return
+	print('group_id: ' + str(group_id))
+	print("members: " + str(vk.groups.getMembers(group_id=group_id)["count"]))
+	print('account_id: ' + str(vk.users.get(access_token=True)[0]['id']))
+	print('posts on the wall: ' + str(vk.wall.get(owner_id=int(-1 * group_id))["count"]))
+
+#---------------------------------------------------------
+
+def dolrate():
+	main_url = r"https://api.exchangerate-api.com/v4/latest/USD"
+	response = requests.get(main_url)
+	data = response.json()
+	os.system('clear')
+	drate = data['rates']['RUB']
+	print('dollar rate now is: ' + str(data['rates']["RUB"]) + 'RUB')
+	
+def drate():
+	main_url = r"https://api.exchangerate-api.com/v4/latest/USD"
+	response = requests.get(main_url)
+	data = response.json()
+	drate = data['rates']['RUB']
+
+#---------------------------------------------------------
+
+def number_links():
+	handle = open("links", "r")
+	vlinks = 0
+	for line in handle:
+		vlinks = vlinks + 1
+	os.system('clear')
+	print('number of links: ' + str(vlinks))
+
+#---------------------------------------------------------
+def backup():
+	os.system('cat links > links_backup')
+	os.system('clear')
+	print('backup successfully, check links_backup')
+def restore():
+	os.system('cat links_backup > links')  
+	os.system('clear')
+	print('restore successfully, check links')
+
+#---------------------------------------------------------
+
 def settings():
 	global login,password,tbp,group_id,group_ph_id,album_id
 	while True:
@@ -59,16 +128,61 @@ def settings():
 		if choice == '3':
 			tbp = input('time beetween posts(in unixtime): ')
 		if choice == '4':
-			group_id = input('group that will be post products(integer): ')
+			group_id = int(input('group that will be post products(integer): '))
 		if choice == '5':
-			group_ph_id = input('group that will be save images on vk\'s server(integer): ')
+			group_ph_id = int(input('group that will be save images on vk\'s server(integer): '))
 		if choice == '6':
-			album_id = input('album with photos in group_ph_id: ')
+			album_id = int(input('album with photos in group_ph_id: '))
 		if choice == '7':
 			os.system('clear')
 			print('settings have been save')
 			return
 
+#---------------------------------------------------------
+
+def check_lfch():
+	links = open("links", 'r')
+	ids = []
+	ids_copy = []
+	new_ids = ''
+	for i in links:
+		link = i
+		if i[len(i) -1: ]== "\n":
+			link = i[:-1]
+		ids.append(link[31:link.index(";")-5])
+	links.close()
+	
+	links = open("items_id", 'r')
+	for i in links:
+		link = i
+		if i[len(i) -1: ]== "\n":
+			link = i[:-1]
+		ids.append(link)
+	links.close()
+	if '' in ids:
+		ids = ids[:-1]
+
+
+	lfch = open('links_for_check','r')
+	for ll in lfch:
+		link = ll
+		if ll[len(ll) -1: ]== "\n":
+			link = ll[:-1]
+		id = link[31:-5]
+		if id in ids:
+			print(id + ' is used already')
+			ids_copy.append(id)
+		else:
+			new_ids = new_ids + link + '\n'
+
+
+	lfch.close()
+	lfch = open('links_for_check','w')
+	lfch.write(new_ids)
+	lfch.close()
+	print('ids: ' + str(ids_copy) + ' was deleted from the file')
+	return
+		
 #---------------------------------------------------------
 
 def create_post(url,urlcash,num):
@@ -136,11 +250,11 @@ def create_post(url,urlcash,num):
 	if "-" in price_rub:
 		first_price = price_rub[:price_rub.index('-')]
 		second_price = price_rub[price_rub.index('-')+1:]	
-		first_usd = round(float(first_price) * 0.016,2)
-		second_usd = round(float(second_price) * 0.016,2)
+		first_usd = round(float(first_price) /drate,2)
+		second_usd = round(float(second_price) / drate,2)
 		price_usd = str(first_usd) + "-" + str(second_usd)
 	else:
-		price_usd = round(float(price_rub) * 0.016,2)
+		price_usd = round(float(price_rub) / drate,2)
 	all_price = str(price_usd) + '$ / ' + str(price_rub) + 'RUB'
 
 #----------------------------------------------------------
@@ -191,7 +305,7 @@ def create_post(url,urlcash,num):
 		attachments = attachments + 'photo' + str(photo[0]['owner_id']) + "_" + str(photo[0]['id']) + ','
 	attachments = attachments[:-1]
 	vk.wall.post(owner_id=int(-1 * group_id),attachments = attachments, message=brand + " " + all_price + '\nSex: ' + sex + "\nType: " + types + "\nMaterial: " + material + "\nSize: " + sizes + "\n\n" + linkcash + '\n\n' + hashtag,publish_date = time + (tbp * num))
-	print('post #' + str(num) + ' was posted succesfully')  
+	print('post #' + str(num) + ' was posted successfully')  
 
 #-----------------------------------------------------------
 
@@ -202,17 +316,17 @@ def main_post():
 		vk = vk_session.get_api()			
 	except:
 		os.system('clear')
-		print('failed to log in. please check settings or your connecting')
+		print('failed to log in. please check settings or your connection')
 		return
 	print('group_id: ' + str(group_id))
 	print("members: " + str(vk.groups.getMembers(group_id=group_id)["count"]))
 	print('account_id: ' + str(vk.users.get(access_token=True)[0]['id']))
-	print('posts on wall: ' + str(vk.wall.get(owner_id=int(-1 * group_id))["count"]))
+	print('posts on the wall: ' + str(vk.wall.get(owner_id=int(-1 * group_id))["count"]))
 	handle = open("links", "r")
 	vlinks = 0
 	for line in handle:
 		vlinks = vlinks + 1
-	print('value of links: ' + str(vlinks))
+	print('number of links: ' + str(vlinks))
 
 #---------------------------------------------------------
 
@@ -243,32 +357,45 @@ def main_post():
 
 
 def main():
+	try:
+		drate()
+	except:
+		print('check your connection')
+
 	commands = {
 	"1": "main_post()",
 	"2": "settings()",
-	"3": "print(\'in developing\')",
-	"4": "print(\'in developing\')",
-	"5": "print(\'in developing\')",
-	"6": "print(\'in developing\')",
-	"7": "print(\'in developing\')",
-	"8": "print(\'in developing\')"
+	"3": "check_lfch()",
+	"4": "backup()",
+	"5": "show_ids()",
+	"6": "number_links()",
+	"7": "check_inf()",
+	"8": "dolrate()",
+	"952": "restore()",
 	}
 	while True:
-		print('Choose an operation:')
-		print('1) start posting')
-		print('2) check settings')
-		print('3) check file \'pfch\' to matches')
-		print('4) make backup links')
-		print('5) print all items\' ids')
-		print('6) print the number of links')
-		print('7) check information about group')
-		print('8) check rate of dollar')
-		choice = input('>> ')
-		if choice in commands.keys():
-			exec(commands[choice])
-		else:
-			os.system('clear')
-			print('incorrect command')
-
+		try:
+			print('Choose an operation:')
+			print('1) start posting')
+			print('2) check settings')
+			print('3) check file \'links_for_check\' to matches')
+			print('4) make backup links')
+			print('5) print all items\' ids')
+			print('6) print the number of links')
+			print('7) check information about group')
+			print('8) check rate of dollar')
+			print('952) restore links from backup')
+			print('0) exit')		
+			choice = input('>> ')
+			if choice == "0":
+				break
+			if choice in commands.keys():
+				exec(commands[choice])
+			else:
+				os.system('clear')
+				print('incorrect command')
+		except:
+			os.system('clear')		
+			print('ERROR')
 if __name__ == '__main__':
 	main()
