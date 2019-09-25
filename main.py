@@ -254,7 +254,7 @@ def main():
 	"8": "print(\'in developing\')"
 	}
 	while True:
-		print('Choose and operation:')
+		print('Choose an operation:')
 		print('1) start posting')
 		print('2) check settings')
 		print('3) check file \'pfch\' to matches')
