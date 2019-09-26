@@ -41,6 +41,26 @@ symbols = ["0","1","2","3","4","5","6","7","8","9","-"]
 
 #---------------------------------------------------------
 
+def random_links():
+        links = open("links", 'r')
+        links_rand = []
+        rlinks = []
+        for i in links:
+                link = i
+                if i[len(i) -1: ]== "\n":
+                        link = i[:-1]
+                links_rand.append(link)
+        links.close()
+        for v in links_rand:
+                rlinks.insert(random.randint(0,len(v)),v)
+        links = open("links","w")
+        ret = ""
+        for k in rlinks:
+                ret = ret + k + "\n"
+        links.write(ret)
+        links.close()
+        os.system("clear")
+        print("randomize was completed successfully")
 def show_ids():
 	text_id = ''
 	links = open("items_id", 'r')
